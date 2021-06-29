@@ -1,6 +1,6 @@
 # Cobblestone
 
-Yet another testing library
+Yet another testing library for Common Lisp
 
 ## License
 
