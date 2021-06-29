@@ -1,6 +1,6 @@
-# cobblestone
+# Cobblestone
 
-Yet another tesging library
+Yet another testing library
 
 ## License
 
