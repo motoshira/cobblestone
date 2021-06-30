@@ -1,7 +1,8 @@
 (defpackage #:cobblestone/main
   (:nicknames #:cobblestone
               #:cb)
-  (:use #:cl))
+  (:use #:cl
+        #:cobblestone/test-case))
 
 (in-package #:cobblestone/main)
 
