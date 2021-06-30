@@ -1,11 +1,20 @@
 (defpackage :cobblestone/test-case
-  (:nickname #:cb/test-case)
+  (:nicknames #:cb/test-case)
   (:use #:cl))
 
 (in-package #:cobblestone/test-case)
 
-(deftype test-type () '(member :ok :ng :is :isnt :pass :fail :expand :condition))
 
 (defstruct (test-case (:constructor %make-test))
+  (name nil :type (or null string))
   (fn nil :type function)
   (doc nil :type (or null string)))
+
+(defmacro make-test ((&key name doc) &body body)
+  `(%make-test
+    ,@(when name
+        `(:name ,name))
+    ,@(when doc
+        `(:doc ,doc))
+    :fn (lambda ()
+          ,@body)))
