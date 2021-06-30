@@ -7,6 +7,5 @@
 (deftype test-type () '(member :ok :ng :is :isnt :pass :fail :expand :condition))
 
 (defstruct (test-case (:constructor %make-test))
-  (expr nil :type cons)
-  (expect nil :type t)
-  (type :ok :type test-type))
+  (fn nil :type function)
+  (doc nil :type (or null string)))
