@@ -8,41 +8,44 @@
 ;; TODO:
 ;;  Write essential implementation first, then introduce structure object.
 
-(defmacro ok (expr)
+(defun ok (expr)
   "Returns :pass if EXPR returns t, if not :fail."
-  `(if (eval ,expr)
-       :pass
-       :fail))
+  (if (eval expr)
+      :pass
+      :fail))
 
-(defmacro ng (expr)
+(defun ng (expr)
   "Returns :pass if EXPR returns nil, if not :fail."
-  `(if (not (eval ,expr))
-       :pass
-       :fail))
+  (if (not (eval expr))
+      :pass
+      :fail))
 
-(defmacro pass (expr)
+(defun pass (expr)
   "Always returns :pass"
   (declare (ignore expr))
   :pass)
 
-(defmacro fail (expr)
+(defun fail (expr)
   "Always returns :fail"
   (declare (ignore expr))
   :fail)
 
-(defmacro fail (expr)
+(defun skip (expr)
   "Always returns :skip"
   (declare (ignore expr))
   :skip)
 
-(defmacro is (expr expected &key (test 'equal))
+(defun is (expr expected &key (test #'equal))
   "Returns :pass if EXPR evaluated is equal to EXPECTED, if not :fail."
-  `(if (,test (eval ',expr)
-              ',expected)
-       :pass
-       :fail))
+  (if (funcall test (eval expr) expected)
+      :pass
+      :fail))
 
-(defmacro isnt (expr expected))
+(defun isnt (expr expected &key (test #'equal))
+  "Returns :pass if EXPR evaluated is equal to EXPECTED, if not :fail."
+  (if (funcall test (eval expr) expected)
+      :fail
+      :pass))
 
 #+nil
 (defun run-test (test)
@@ -50,6 +53,6 @@
   (the test-result)
   nil)
 
-#+nil
+
 (defun run-tests (&rest test-casess)
-  nil)
+  (mapcar #'run-test tests))
