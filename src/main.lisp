@@ -5,26 +5,51 @@
 
 (in-package #:cobblestone/main)
 
-(defmacro ok (expr) nil)
+;; TODO:
+;;  Write essential implementation first, then introduce structure object.
 
-(defmacro ng (expr) nil)
+(defmacro ok (expr)
+  "Returns :pass if EXPR returns t, if not :fail."
+  `(if (eval ,expr)
+       :pass
+       :fail))
 
-(defmacro pass (expr) nil)
+(defmacro ng (expr)
+  "Returns :pass if EXPR returns nil, if not :fail."
+  `(if (not (eval ,expr))
+       :pass
+       :fail))
 
-(defmacro fail (expr) nil)
+(defmacro pass (expr)
+  "Always returns :pass"
+  (declare (ignore expr))
+  :pass)
 
-(defmacro is (expr expected) nil)
+(defmacro fail (expr)
+  "Always returns :fail"
+  (declare (ignore expr))
+  :fail)
 
-(defmacro isnt (expr expected) nil)
+(defmacro fail (expr)
+  "Always returns :skip"
+  (declare (ignore expr))
+  :skip)
 
-(defmacro is-expand (expr expected-sexp) nil)
+(defmacro is (expr expected &key (test 'equal))
+  "Returns :pass if EXPR evaluated is equal to EXPECTED, if not :fail."
+  `(if (,test (eval ',expr)
+              ',expected)
+       :pass
+       :fail))
 
-(defmacro is-conditon (expr expected-condition) nil)
+(defmacro isnt (expr expected))
 
+#+nil
 (defun run-test (test)
   (declare (test-case test))
   (the test-result)
   nil)
 
+#+nil
 (defun run-tests (&rest test-casess)
   nil)
