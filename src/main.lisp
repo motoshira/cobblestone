@@ -2,7 +2,11 @@
   (:nicknames #:cobblestone
               #:cb)
   (:use #:cl
-        #:cobblestone/test-case))
+        #:cobblestone/test-case)
+  (:import-from #:cb/test
+                #:make-test
+                #:run-test
+                #:run-tests))
 
 (in-package #:cobblestone/main)
 
@@ -47,13 +51,3 @@
   (if (funcall test (eval expr) expected)
       :fail
       :pass))
-
-#+nil
-(defun run-test (test)
-  (declare (test-case test))
-  (the test-result)
-  nil)
-
-
-(defun run-tests (&rest test-casess)
-  (mapcar #'run-test tests))
