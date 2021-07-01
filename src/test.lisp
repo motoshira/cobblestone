@@ -1,9 +1,8 @@
 (defpackage :cobblestone/test
   (:nicknames #:cb/test)
   (:use #:cl)
-  (:export #:test-name
-           #:test-doc
-           #:test-fn))
+  (:export #:make-test
+           #:run-test))
 
 (in-package #:cobblestone/test)
 
@@ -26,6 +25,7 @@
           ,@body)))
 
 (defstruct (result (:constructor %make-result))
+  (name nil :type (or null string))
   (doc "" :type (or null string))
   (fn nil :type function)
   (result nil :type (member :pass :fail :skip))
@@ -44,3 +44,6 @@
                     :fn fn
                     :result res
                     :error err))))
+
+(defun run-tests (&rest tests)
+  (mapcar #'run-test tests))
