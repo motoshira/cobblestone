@@ -1,39 +1,42 @@
 (defpackage #:cobblestone/main
   (:nicknames #:cobblestone
               #:cb)
-  (:use #:cl
-        #:cobblestone/test-case)
-  (:import-from #:cb/test
+  (:use #:cl)
+  (:import-from #:cobblestone/test
                 #:make-test
                 #:run-test
-                #:run-tests))
+                #:run-tests)
+  (:export #:ok
+           #:ng
+           #:pass
+           #:fail
+           #:skip
+           #:fail
+           #:is
+           #:isnt
+           #:make-test
+           #:run-test
+           #:run-tests))
 
 (in-package #:cobblestone/main)
 
 ;; TODO:
-;;  Write essential implementation first, then introduce structure object.
+;;  Write essential implementation first, then introduce structure object
 
-(defun ok (expr)
-  "Returns :pass if EXPR returns t, if not :fail."
-  (if (eval expr)
-      :pass
-      :fail))
+(defmacro ok (expr)
+  `(assert ,expr))
 
-(defun ng (expr)
+(defmacro ng (expr)
   "Returns :pass if EXPR returns nil, if not :fail."
-  (if (not (eval expr))
-      :pass
-      :fail))
+  `(assert (not ,expr)))
 
-(defun pass (expr)
+(defmacro pass (expr)
   "Always returns :pass"
-  (declare (ignore expr))
-  :pass)
+  (declare (ignore expr)))
 
 (defun fail (expr)
   "Always returns :fail"
-  (declare (ignore expr))
-  :fail)
+  (declare (ignore expr)))
 
 (defun skip (expr)
   "Always returns :skip"

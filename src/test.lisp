@@ -13,7 +13,7 @@
   (fn nil :type function)
   (doc nil :type (or null string)))
 
-;; tODO: fixture
+;; TODO: fixture
 
 (defmacro make-test ((&key name doc) &body body)
   `(%make-test
@@ -40,10 +40,25 @@
                                   (return-from test-suite (values :fail c)))))
             (funcall fn)
             (values :pass nil)))
-      (%make-result :doc doc
+      (%make-result :name name
+                    :doc doc
                     :fn fn
                     :result res
                     :error err))))
 
 (defun run-tests (&rest tests)
   (mapcar #'run-test tests))
+
+
+#+nil
+(defun test-example ()
+  (labels ((fact (n)
+             (if (zerop n)
+                 1
+                 (* n (fact (1- n))))))
+    (run-tests
+     (make-test (:name "Factorial"
+                 :doc "Testing factorial")
+       (ok (= (fact 5) 120))
+       (ok (= (fact 3) 6))
+       (ok (= (fact 0) 1))))))
