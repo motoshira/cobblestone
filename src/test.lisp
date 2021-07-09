@@ -1,6 +1,7 @@
 (defpackage :cobblestone/test
   (:nicknames #:cb/test)
   (:use #:cl)
+  (:import-from #:lparallel)
   (:export #:make-test
            #:run-test))
 
@@ -46,9 +47,10 @@
                     :result res
                     :error err))))
 
-(defun run-tests (&rest tests)
-  (mapcar #'run-test tests))
-
+(defun run-tests (&rest tests &key run-parallel-p)
+  (if run-parallel-p
+      (lparallel:pmapcar #'run-test tests)
+      (mapcar #'run-test tests)))
 
 #+nil
 (defun test-example ()
@@ -62,3 +64,37 @@
        (ok (= (fact 5) 120))
        (ok (= (fact 3) 6))
        (ok (= (fact 0) 1))))))
+
+;; macros
+
+(defmacro ok (expr)
+  `(assert ,expr))
+
+(defmacro ng (expr)
+  "Returns :pass if EXPR returns nil, if not :fail."
+  `(assert (not ,expr)))
+
+(defmacro pass (expr)
+  "Always returns :pass"
+  (declare (ignore expr)))
+
+(defun fail (expr)
+  "Always returns :fail"
+  (declare (ignore expr)))
+
+(defun skip (expr)
+  "Always returns :skip"
+  (declare (ignore expr))
+  :skip)
+
+(defun is (expr expected &key (test #'equal))
+  "Returns :pass if EXPR evaluated is equal to EXPECTED, if not :fail."
+  (if (funcall test (eval expr) expected)
+      :pass
+      :fail))
+
+(defun isnt (expr expected &key (test #'equal))
+  "Returns :pass if EXPR evaluated is equal to EXPECTED, if not :fail."
+  (if (funcall test (eval expr) expected)
+      :fail
+      :pass))

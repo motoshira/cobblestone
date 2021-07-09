@@ -5,52 +5,31 @@
   (:import-from #:cobblestone/test
                 #:make-test
                 #:run-test
-                #:run-tests)
-  (:export #:ok
-           #:ng
-           #:pass
-           #:fail
-           #:skip
-           #:fail
-           #:is
-           #:isnt
-           #:make-test
-           #:run-test
-           #:run-tests))
+                #:run-tests))
 
 (in-package #:cobblestone/main)
 
 ;; TODO:
-;;  Write essential implementation first, then introduce structure object
+;; - Generator
 
-(defmacro ok (expr)
-  `(assert ,expr))
+(define-symbol-macro *alphabet-chars* (loop for i below 26 collect (code-char (+ (char-code #\a)
+                                                                        i))))
 
-(defmacro ng (expr)
-  "Returns :pass if EXPR returns nil, if not :fail."
-  `(assert (not ,expr)))
+(defmacro %gen-integer (min-value max-value)
+  `(+ ,min-value
+      (random (1+ (- ,max-value ,min-value)))))
 
-(defmacro pass (expr)
-  "Always returns :pass"
-  (declare (ignore expr)))
+(defmacro %gen-char (chars)
+  (let* ((%chars (gensym "CHARS"))
+         (chars (or chars *alphabet-chars*)))
+    `(let ((,%chars ',chars))
+       (dolist (c ,%chars)
+         (unless (typep c 'character)
+           (error (make-condition 'type-error))))
+       (nth (random (length ,%chars)) ,%chars))))
 
-(defun fail (expr)
-  "Always returns :fail"
-  (declare (ignore expr)))
-
-(defun skip (expr)
-  "Always returns :skip"
-  (declare (ignore expr))
-  :skip)
-
-(defun is (expr expected &key (test #'equal))
-  "Returns :pass if EXPR evaluated is equal to EXPECTED, if not :fail."
-  (if (funcall test (eval expr) expected)
-      :pass
-      :fail))
-
-(defun isnt (expr expected &key (test #'equal))
-  "Returns :pass if EXPR evaluated is equal to EXPECTED, if not :fail."
-  (if (funcall test (eval expr) expected)
-      :fail
-      :pass))
+(defmacro %gen-string (length &key (chars))
+  (check-type length number)
+  (let* ((chars (or chars *alphabet-chars*)))
+    `(coerce (loop repeat ,length collect (%gen-char ,chars))
+             'string)))
