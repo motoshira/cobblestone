@@ -1,4 +1,4 @@
-# cobblestone
+# Cobblestone
 
 Structural validation library for Common Lisp
 
