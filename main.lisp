@@ -1,4 +1,3 @@
-(in-package #:cl-user)
 (defpackage cobblestone/main
   (:nicknames #:cobblestone)
   (:use #:cl)
@@ -23,7 +22,7 @@
 (defmacro %get-message (v value)
   (etypecase (validator-message v)
     (string (validator-message v))
-    (function `(funcall ,(validator-message v) ,value))))
+    (list `(funcall ,(validator-message v) ,value))))
 
 (defmacro %expand-one-spec-forms (spec params result errors next-tag)
   (destructuring-bind (key . validators) spec
@@ -37,14 +36,13 @@
              (go ,next-tag))
            (let ((,value (cdr ,kv)))
              ,@(loop for v in validators
-                     ;; treat required
                      unless (validator-required v)
                        collect `(unless (funcall ,(validator-validate v) ,value)
                                   (push (cons ,key (%get-message ,v ,value))
                                         ,errors)
                                   (go ,next-tag)))
              ;; TODO coerce
-             (push ,value ,result)
+             (push (cons ,key ,value) ,result)
              (go ,next-tag)))))))
 
 (defmacro %expand-forms (schema params key-test)
@@ -75,6 +73,16 @@
             (setf ,params (rest ,params))
             (go ,check-key)
             ,end)
+         ;; check required keys
+         ,@(loop for (key . vs) in schema
+                 for required = (find-if (lambda (v)
+                                           (validator-required v))
+                                         vs)
+                 when required
+                   collect `(unless (or (find ,key ,result :key #'car :test (function ,key-test))
+                                        (find ,key ,errors :key #'car :test (function ,key-test)))
+                              (push (cons ,key (%get-message ,required nil))
+                                    ,errors)))
          (values (nreverse ,result)
                  (nreverse ,errors))))))
 
