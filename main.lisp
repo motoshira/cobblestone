@@ -22,7 +22,7 @@
 (defmacro %get-message (v value)
   (etypecase (validator-message v)
     (string (validator-message v))
-    (function `(funcall ,(validator-message v) ,value))))
+    (list `(funcall ,(validator-message v) ,value))))
 
 (defmacro %expand-one-spec-forms (spec params result errors next-tag)
   (destructuring-bind (key . validators) spec
@@ -79,7 +79,8 @@
                                            (validator-required v))
                                          vs)
                  when required
-                   collect `(unless (find ,key ,result :key #'car :test (function ,key-test))
+                   collect `(unless (or (find ,key ,result :key #'car :test (function ,key-test))
+                                        (find ,key ,errors :key #'car :test (function ,key-test)))
                               (push (cons ,key (%get-message ,required nil))
                                     ,errors)))
          (values (nreverse ,result)
