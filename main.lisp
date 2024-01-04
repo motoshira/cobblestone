@@ -6,96 +6,83 @@
 
 (in-package cobblestone/main)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defstruct (validator (:constructor %make-validator)
-                        (:type list))
-    required message validate))
+(defparameter *default-error-message* "validation error")
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defun %validate-schema (schema)
-    (assert (listp schema))
-    (loop for pair in schema
-          do (destructuring-bind (key . specs) pair
-               (assert (stringp key))
-               (assert (listp specs))))))
+(defun %make-message-fn (message)
+  (etypecase message
+    (string (constantly message))
+    (function message)
+    (null (constantly *default-error-message*))))
 
-(defmacro %get-message (v value)
-  (etypecase (validator-message v)
-    (string (validator-message v))
-    (function `(funcall ,(validator-message v) ,value))))
+(defstruct (validator (:constructor %make-validator))
+  (validate nil :type function)
+  (coerce nil :type function)
+  (message nil :type function))
 
-(defmacro %expand-one-spec-forms (spec params result errors next-tag)
-  (destructuring-bind (key . validators) spec
-    (let ((value (gensym))
-          (kv (gensym)))
-      `(progn
-         (let ((,kv (first ,params)))
-           (unless (consp ,kv)
-             (push (cons ,key "value is missing")
-                   ,errors)
-             (go ,next-tag))
-           (let ((,value (cdr ,kv)))
-             ,@(loop for v in validators
-                     unless (validator-required v)
-                       collect `(unless (funcall ,(validator-validate v) ,value)
-                                  (push (cons ,key (%get-message ,v ,value))
-                                        ,errors)
-                                  (go ,next-tag)))
-             ;; TODO coerce
-             (push (cons ,key ,value) ,result)
-             (go ,next-tag)))))))
+(defun %make-validator-from-spec (spec key)
+  (destructuring-bind (&key validate coerce message &allow-other-keys) spec
+    (let ((validate (or validate (constantly t)))
+          (coerce (or coerce #'identity))
+          (message (%make-message-fn message )))
+      (%make-validator :validate validate
+                       :coerce coerce
+                       :message message))))
 
-(defmacro %expand-forms (schema params key-test)
-  (let* ((schema-amount (length schema))
-         (tags (loop repeat schema-amount
-                     collect (gensym))))
-    (destructuring-bind (check-key go-next-pair end result errors kv key) (loop repeat 7 collect (gensym))
-      `(let ((,params ,params)
-             (,result nil)
-             (,errors nil))
-         (tagbody
-            ,check-key
-            (when (null ,params)
-              (go ,end))
-            (let* ((,kv (first ,params))
-                   (,key (car ,kv)))
-              (cond
-                ,@(loop for (k . vs) in schema
-                        for tag in tags
-                        collect `((,key-test ,k ,key)
-                                  (go ,tag))))
-              (setf ,params (rest ,params)))
-            ,@(loop for spec in schema
-                    for tag in tags
-                    append `(,tag
-                             (%expand-one-spec-forms ,spec ,params ,result ,errors ,go-next-pair)))
-            ,go-next-pair
-            (setf ,params (rest ,params))
-            (go ,check-key)
-            ,end)
-         ;; check required keys
-         ,@(loop for (key . vs) in schema
-                 for required = (find-if (lambda (v)
-                                           (validator-required v))
-                                         vs)
-                 when required
-                   collect `(unless (find ,key ,result :key #'car :test (function ,key-test))
-                              (push (cons ,key (%get-message ,required nil))
-                                    ,errors)))
-         (values (nreverse ,result)
-                 (nreverse ,errors))))))
+(defstruct (compiled-alist-validator (:constructor %make-cav)
+                                     (:conc-name %cav-))
+  (keys nil :type list)
+  (required-keys nil :type list)
+  (required-message nil :type function)
+  (validation-fn-by-key nil :type hash-table)
+  (key-test nil :type function))
 
-(defmacro compile-validator (schema &key (key-test 'string=))
-  "Compile a validator for SCHEMA."
-  (%validate-schema schema)
-  (let ((params (gensym))
-        (schema (loop for (key . validator-specs) in schema
-                      collect (cons key (mapcar (lambda (vs)
-                                                  (apply #'%make-validator vs))
-                                                validator-specs)))))
-    `(lambda (,params)
-       (%expand-forms ,schema ,params ,key-test))))
+(defun compile-validator (schema &rest options &key (key-test #'equal) required-keys required-message)
+  (declare (ignore options))
+  (let ((v-fn-by-key (make-hash-table :test key-test)))
+    (dolist (kvs schema)
+      (destructuring-bind (key &rest vs) kvs
+        (let* ((vs (loop for spec in vs
+                         collect (%make-validator-from-spec spec key)))
+               (validate-fn (lambda (value)
+                              (block validate
+                                (dolist (v vs)
+                                  (unless (funcall (validator-validate v) value)
+                                    (return-from validate
+                                      (values (funcall (validator-message v) key)
+                                              nil)))
+                                  (setf value (funcall (validator-coerce v) value)))
+                                (values nil
+                                        value)))))
+          (setf (gethash key v-fn-by-key) validate-fn))))
+    (%make-cav :keys (mapcar #'car schema)
+               :required-keys (reverse required-keys)
+               :required-message (%make-message-fn required-message)
+               :validation-fn-by-key v-fn-by-key
+               :key-test key-test)))
 
 (defun validate (validator alist)
-  "Perform validation on ALIST using VALIDATOR."
-  (funcall validator alist))
+  "Perform validation on ALIST using VALIDATOR. OPTIONS is a plist"
+  (with-accessors ((keys %cav-keys)
+                   (required-keys %cav-required-keys)
+                   (required-message %cav-required-message)
+                   (v-fn-by-key %cav-validation-fn-by-key)
+                   (key-test %cav-key-test)) validator
+    (let ((res nil)
+          (errors nil)
+          (required-keys-table (make-hash-table :test key-test)))
+      (dolist (key required-keys)
+        (setf (gethash key required-keys-table) t))
+      (loop for (key . value) in alist do
+        (multiple-value-bind (v-fn found) (gethash key v-fn-by-key)
+          (when found
+            (remhash key required-keys-table)
+            (multiple-value-bind (error v) (funcall v-fn value)
+              (if error
+                  (push (cons key error) errors)
+                  (push (cons key v) res))))))
+      (dolist (missing-key (reverse required-keys))
+        (when (gethash missing-key required-keys-table)
+          (push (cons missing-key (funcall required-message missing-key))
+                errors)))
+      (values (reverse errors)
+              (reverse res)))))
