@@ -1,0 +1,39 @@
+name: test
+on: [push]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Cache Roswell
+        uses: actions/cache@v3
+        with:
+          path: ~/.roswell
+          key: ${{ runner.os }}-roswell }}
+          restore-keys: |
+            ${{ runner.os }}-roswell
+
+      - name: Install Roswell
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl jq wget
+          curl -sL `curl -s https://api.github.com/repos/roswell/roswell/releases/latest | jq -r '.assets | .[] | select(.name|test("\\\.deb$")) | .browser_download_url'` -o roswell.deb
+          sudo dpkg -i roswell.deb
+          # set path to roswell scripts
+          echo $HOME/.roswell/bin >> $GITHUB_PATH
+          ros setup
+          ros install rove
+      - name: Run test
+        run: ros -S . run -- --eval '(ql:quickload :cobblestone)' --eval '(asdf:test-system :cobblestone)' --quit
+      - name: Notify to Discord
+        uses: sarisia/actions-status-discord@v1
+        if: always()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          status: ${{ job.status }}
