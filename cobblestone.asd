@@ -1,7 +1,7 @@
 (asdf:defsystem cobblestone
   :author "motoshira"
   :license "MIT"
-  :version "0.0.1"
+  :version "0.0.2"
   :class :package-inferred-system
   :depends-on ("cobblestone/main")
   :in-order-to ((test-op (test-op cobblestone/test))))
