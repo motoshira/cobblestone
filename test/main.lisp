@@ -12,11 +12,12 @@
      (:validate ,#'stringp
       :message "name must be a string"))))
 
-(defparameter *test-validator* (compile-validator *test-validator-spec*
-                                                  :key-test #'equal
-                                                  :required-keys '("id" "name")
-                                                  :required-message (lambda (key)
-                                                                      (format nil "~a is required" key))))
+(defparameter *test-validator*
+  (compile-validator *test-validator-spec*
+                     :key-test #'equal
+                     :required-keys '("id" "name")
+                     :required-message (lambda (key)
+                                         (format nil "~a is required" key))))
 
 (deftest validator-test
   (testing "missing keys"
