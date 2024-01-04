@@ -8,7 +8,7 @@ Cobblestone is a structural validation library for Common Lisp, inspired by [fun
 
 It provides a way to define a validator for association list and validate it.
 
-This software is in alpha stage. It is not ready for production use.
+This software is in alpha stage. The API may change in the future.
 
 ## Usage
 
@@ -16,33 +16,31 @@ This software is in alpha stage. It is not ready for production use.
 
  (use-package :cobblestone)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *test-validator-schema*
-    ;; A validator schema is a list of (key . validation-specs) pairs. This schema must be compile-time constant.
-    '(("id"
-       (:required t
-        :message "id is required")
-       (:validate #'integerp
-        :message "id must be a integer"))
-      ("name"
-       (:required t
-        :message "name is required")
-       (:validate #'stringp
-        :message "name must be a string")))))
+(defparameter *test-validator-spec*
+  `(("id"
+     (:validate ,#'integerp
+      :message "id must be a integer"))
+    ("name"
+     (:validate ,#'stringp
+      :message "name must be a string"))))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *test-validator* (compile-validator #.*test-validator-spec*)))
+(defparameter *test-validator*
+  (compile-validator *test-validator-spec*
+                     :key-test #'equal
+                     :required-keys '("id" "name")
+                     :required-message (lambda (key)
+                                         (format nil "~a is required" key))))
 
-;; Returns params if params is valid, otherwise returns NIL and error messages.
+;; validate returns two values, the first is a error alist, the second is a result alist.
 
 (validate *test-validator* '(("id" . 1) ("name" . "foo")))
-;; => (("id" . 1) ("name" . "foo")), NIL
+;; => NIL, (("id" . 1) ("name" . "foo"))
 
 (validate *test-validator* '(("id" . 1)))
-;; => NIL, (("name" . "name is required"))
+;; => (("name" . "name is required")), (("id" . 1))
 
 (validate *test-validator* '(("id" . "1") ("name" . "foo")))
-;; => NIL, (("id" . "id must be a integer"))
+;; => (("id" . "id must be a integer")), (("name" . "foo"))
 ```
 
 ## Author
