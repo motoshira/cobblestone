@@ -3,7 +3,7 @@
   :license "MIT"
   :version "0.0.3"
   :class :package-inferred-system
-  :depends-on ("cobblestone/main")
+  :depends-on ("cobblestone/main" "cl-ppcre")
   :in-order-to ((test-op (test-op cobblestone/test))))
 
 (asdf:defsystem cobblestone/test
