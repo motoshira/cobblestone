@@ -4,6 +4,21 @@
 
 (in-package #:cobblestone/test/validators)
 
+(deftest not-nil-validator-test
+  (let* ((schema `(("name" . (,(not-nil)))))
+         (validator (compile-validator schema)))
+    (testing "fail"
+      (let ((params '(("name" . nil))))
+        (ok (equalp (multiple-value-list
+                     (validate validator params))
+                    '((("name" . "name cannot be nil"))
+                      nil)))))
+    (testing "pass"
+      (let ((params '(("name" . "motoshira"))))
+        (ok (equalp (multiple-value-list
+                     (validate validator params))
+                    `(nil ,params)))))))
+
 (deftest uuid-validator-test
   (let* ((schema `(("id" . (,(uuid)))))
          (validator (compile-validator schema)))
