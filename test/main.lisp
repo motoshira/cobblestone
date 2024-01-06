@@ -1,4 +1,4 @@
-(in-package #:cl-user)
+(cl:in-package #:cl-user)
 (defpackage cobblestone/test/main
   (:use #:cl #:rove #:cobblestone/main))
 
