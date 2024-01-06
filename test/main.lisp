@@ -1,4 +1,4 @@
-(in-package #:cl-user)
+(cl:in-package #:cl-user)
 (defpackage cobblestone/test/main
   (:use #:cl #:rove #:cobblestone/main))
 
@@ -19,7 +19,7 @@
                      :required-message (lambda (key)
                                          (format nil "~a is required" key))))
 
-(deftest validator-test
+(deftest validate-test
   (testing "missing keys"
     (let ((params '()))
       (ok (equalp (multiple-value-list
