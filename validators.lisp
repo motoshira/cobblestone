@@ -4,7 +4,8 @@
   (:shadow #:integer #:string)
   (:export #:uuid
            #:not-nil
-           #:integer))
+           #:integer
+           #:integer-str))
 
 (in-package #:cobblestone/validators)
 
@@ -19,6 +20,19 @@
   `(:validate ,#'integerp
     :message ,(lambda (key)
                 (format nil "~a must be an integer" key))))
+
+(defun integer-str ()
+  "Validate if a value is an integer or a string of an integer."
+  `(:validate ,(lambda (s)
+                 (or (integerp s)
+                     (and (stringp s)
+                          (ppcre:scan "[0-9]+" s))))
+    :message ,(lambda (key)
+                (format nil "~a must be an integer" key))
+    :coerce ,(lambda (s)
+               (if (integerp s)
+                   s
+                   (parse-integer s)))))
 
 (defun not-nil ()
   `(:validate ,(lambda (s) (not (null s)))

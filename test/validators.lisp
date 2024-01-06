@@ -35,6 +35,27 @@
                      (validate validator params))
                     `(nil ,params)))))))
 
+(deftest integer-str-validator-test
+  (let* ((schema `(("age" . (,(integer-str)))))
+         (validator (compile-validator schema)))
+    (testing "fail"
+      (let ((params '(("age" . "hoge"))))
+        (ok (equalp (multiple-value-list
+                     (validate validator params))
+                    '((("age" . "age must be an integer"))
+                      nil)))))
+    (testing "pass"
+      (testing "an integer"
+        (let ((params '(("age" . 1))))
+          (ok (equalp (multiple-value-list
+                       (validate validator params))
+                      `(nil ,params)))))
+      (testing "a string of an integer"
+        (let* ((params '(("age" . "1"))))
+          (ok (equalp (multiple-value-list
+                       (validate validator params))
+                      '(nil (("age" . 1))))))))))
+
 (deftest not-nil-validator-test
   (let* ((schema `(("name" . (,(not-nil)))))
          (validator (compile-validator schema)))
