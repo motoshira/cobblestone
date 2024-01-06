@@ -1,9 +1,24 @@
 (cl:in-package #:cl-user)
 (defpackage #:cobblestone/test/validators
   (:use #:cl #:rove #:cobblestone  #:cobblestone/validators)
-  (:shadowing-import-from #:cobblestone/validators #:integer))
+  (:shadowing-import-from #:cobblestone/validators #:integer #:string))
 
 (in-package #:cobblestone/test/validators)
+
+(deftest string-validator-test
+  (let* ((schema `(("name" . (,(string)))))
+         (validator (compile-validator schema)))
+    (testing "fail"
+      (let ((params '(("name" . 1))))
+        (ok (equalp (multiple-value-list
+                     (validate validator params))
+                    '((("name" . "name must be a string"))
+                      nil)))))
+    (testing "pass"
+      (let ((params '(("name" . "motoshira"))))
+        (ok (equalp (multiple-value-list
+                     (validate validator params))
+                    `(nil ,params)))))))
 
 (deftest integer-validator-test
   (let* ((schema `(("age" . (,(integer)))))

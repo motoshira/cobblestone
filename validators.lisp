@@ -1,12 +1,18 @@
 (cl:in-package #:cl-user)
 (defpackage #:cobblestone/validators
   (:use #:cl #:cl-ppcre)
-  (:shadow #:integer)
+  (:shadow #:integer #:string)
   (:export #:uuid
            #:not-nil
            #:integer))
 
 (in-package #:cobblestone/validators)
+
+(defun string ()
+  "Validate if a value is a string."
+  `(:validate ,#'stringp
+    :message ,(lambda (key)
+                (format nil "~a must be a string" key))))
 
 (defun integer ()
   "Validate if a value is an integer."
