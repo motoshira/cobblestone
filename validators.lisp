@@ -1,10 +1,18 @@
 (cl:in-package #:cl-user)
 (defpackage #:cobblestone/validators
   (:use #:cl #:cl-ppcre)
+  (:shadow #:integer)
   (:export #:uuid
-           #:not-nil))
+           #:not-nil
+           #:integer))
 
 (in-package #:cobblestone/validators)
+
+(defun integer ()
+  "Validate if a value is an integer."
+  `(:validate ,#'integerp
+    :message ,(lambda (key)
+                (format nil "~a must be an integer" key))))
 
 (defun not-nil ()
   `(:validate ,(lambda (s) (not (null s)))
